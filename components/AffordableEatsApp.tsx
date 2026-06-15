@@ -34,6 +34,7 @@ export function AffordableEatsApp() {
   const [searchText, setSearchText] = useState("");
   const [draft, setDraft] = useState(defaultDraft);
   const [menuUploads, setMenuUploads] = useState<MenuUpload[]>([]);
+  const [uploadError, setUploadError] = useState("");
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(sampleRestaurants[0]?.id ?? "");
 
   const filteredRestaurants = useMemo(() => {
@@ -58,17 +59,39 @@ export function AffordableEatsApp() {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
+  function isSupportedMenuFile(file: File) {
+    const fileName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || fileName.endsWith(".pdf");
+    const isImage = file.type.startsWith("image/");
+    const isWebP = file.type === "image/webp" || fileName.endsWith(".webp");
+
+    return isPdf || isImage || isWebP;
+  }
+
   function handleMenuFiles(files: FileList | null) {
     if (!files) {
       return;
     }
 
-    const uploads = Array.from(files).map((file, index) => ({
+    const selectedFiles = Array.from(files);
+    const supportedFiles = selectedFiles.filter(isSupportedMenuFile);
+    const unsupportedCount = selectedFiles.length - supportedFiles.length;
+
+    setUploadError(
+      unsupportedCount > 0
+        ? `${unsupportedCount} unsupported file${unsupportedCount === 1 ? " was" : "s were"} skipped. Upload PDF, image, or WebP menu files.`
+        : ""
+    );
+
+    const uploads = supportedFiles.map((file, index) => ({
       id: `${file.name}-${file.lastModified}-${index}`,
       name: file.name,
-      type: file.type || "application/octet-stream",
+      type: file.type || (file.name.toLowerCase().endsWith(".webp") ? "image/webp" : "application/octet-stream"),
       size: file.size,
-      previewUrl: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined
+      previewUrl:
+        file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".webp")
+          ? URL.createObjectURL(file)
+          : undefined
     }));
 
     setMenuUploads((current) => [...current, ...uploads]);
@@ -114,6 +137,7 @@ export function AffordableEatsApp() {
     setSelectedRestaurantId(restaurant.id);
     setDraft(defaultDraft);
     setMenuUploads([]);
+    setUploadError("");
   }
 
   return (
@@ -262,15 +286,16 @@ export function AffordableEatsApp() {
             </label>
           </div>
           <label className="file-upload">
-            Upload menu PDF or images
+            Upload menu PDF, WebP, or images
             <input
-              accept="image/*,.pdf,application/pdf"
+              accept="image/*,.webp,image/webp,.pdf,application/pdf"
               multiple
               onChange={(event) => handleMenuFiles(event.target.files)}
               type="file"
             />
-            <span>Choose one PDF, one image, or multiple menu photos. Image files are previewed before saving.</span>
+            <span>Choose one PDF, one image, WebP files, or multiple menu photos. Image files are previewed before saving.</span>
           </label>
+          {uploadError ? <p className="upload-error">{uploadError}</p> : null}
           {menuUploads.length > 0 ? (
             <ul className="upload-list">
               {menuUploads.map((upload) => (
