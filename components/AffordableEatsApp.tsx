@@ -1,10 +1,7 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import { FormEvent, useMemo, useState } from "react";
-import { formatPrice, parseMenuText, sampleRestaurants } from "@/lib/restaurants";
-import type { MenuUpload, Restaurant } from "@/lib/restaurants";
+import { formatPrice, parseMenuText, Restaurant, sampleRestaurants } from "@/lib/restaurants";
 
 type DraftRestaurant = {
   name: string;
@@ -33,8 +30,6 @@ export function AffordableEatsApp() {
   const [budget, setBudget] = useState(1000);
   const [searchText, setSearchText] = useState("");
   const [draft, setDraft] = useState(defaultDraft);
-  const [menuUploads, setMenuUploads] = useState<MenuUpload[]>([]);
-  const [uploadError, setUploadError] = useState("");
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(sampleRestaurants[0]?.id ?? "");
 
   const filteredRestaurants = useMemo(() => {
@@ -59,56 +54,6 @@ export function AffordableEatsApp() {
     setDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function isSupportedMenuFile(file: File) {
-    const fileName = file.name.toLowerCase();
-    const isPdf = file.type === "application/pdf" || fileName.endsWith(".pdf");
-    const isImage = file.type.startsWith("image/");
-    const isWebP = file.type === "image/webp" || fileName.endsWith(".webp");
-
-    return isPdf || isImage || isWebP;
-  }
-
-  function handleMenuFiles(files: FileList | null) {
-    if (!files) {
-      return;
-    }
-
-    const selectedFiles = Array.from(files);
-    const supportedFiles = selectedFiles.filter(isSupportedMenuFile);
-    const unsupportedCount = selectedFiles.length - supportedFiles.length;
-
-    setUploadError(
-      unsupportedCount > 0
-        ? `${unsupportedCount} unsupported file${unsupportedCount === 1 ? " was" : "s were"} skipped. Upload PDF, image, or WebP menu files.`
-        : ""
-    );
-
-    const uploads = supportedFiles.map((file, index) => ({
-      id: `${file.name}-${file.lastModified}-${index}`,
-      name: file.name,
-      type: file.type || (file.name.toLowerCase().endsWith(".webp") ? "image/webp" : "application/octet-stream"),
-      size: file.size,
-      previewUrl:
-        file.type.startsWith("image/") || file.name.toLowerCase().endsWith(".webp")
-          ? URL.createObjectURL(file)
-          : undefined
-    }));
-
-    setMenuUploads((current) => [...current, ...uploads]);
-  }
-
-  function removeMenuUpload(id: string) {
-    setMenuUploads((current) => {
-      const uploadToRemove = current.find((upload) => upload.id === id);
-
-      if (uploadToRemove?.previewUrl) {
-        URL.revokeObjectURL(uploadToRemove.previewUrl);
-      }
-
-      return current.filter((upload) => upload.id !== id);
-    });
-  }
-
   function handleAddRestaurant(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -129,15 +74,12 @@ export function AffordableEatsApp() {
       latitude,
       longitude,
       menuItems: parseMenuText(draft.menuText),
-      menuUploads,
       notes: draft.notes.trim()
     };
 
     setRestaurants((current) => [restaurant, ...current]);
     setSelectedRestaurantId(restaurant.id);
     setDraft(defaultDraft);
-    setMenuUploads([]);
-    setUploadError("");
   }
 
   return (
@@ -211,23 +153,6 @@ export function AffordableEatsApp() {
               <p className="coordinate-line">
                 {selectedRestaurant.latitude.toFixed(4)}, {selectedRestaurant.longitude.toFixed(4)}
               </p>
-              <h3>Uploaded menus</h3>
-              {selectedRestaurant.menuUploads.length > 0 ? (
-                <ul className="upload-list compact">
-                  {selectedRestaurant.menuUploads.map((upload) => (
-                    <li key={upload.id}>
-                      {upload.previewUrl ? (
-                        <img src={upload.previewUrl} alt={`${upload.name} preview`} />
-                      ) : (
-                        <span className="pdf-badge">PDF</span>
-                      )}
-                      <span>{upload.name}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="muted-copy">No menu files attached yet.</p>
-              )}
               <h3>Menu prices</h3>
               <ul className="menu-list">
                 {selectedRestaurant.menuItems.map((item) => (
@@ -285,39 +210,8 @@ export function AffordableEatsApp() {
               <input value={draft.longitude} onChange={(event) => updateDraft("longitude", event.target.value)} required />
             </label>
           </div>
-          <label className="file-upload">
-            Upload menu PDF, WebP, or images
-            <input
-              accept="image/*,.webp,image/webp,.pdf,application/pdf"
-              multiple
-              onChange={(event) => handleMenuFiles(event.target.files)}
-              type="file"
-            />
-            <span>Choose one PDF, one image, WebP files, or multiple menu photos. Image files are previewed before saving.</span>
-          </label>
-          {uploadError ? <p className="upload-error">{uploadError}</p> : null}
-          {menuUploads.length > 0 ? (
-            <ul className="upload-list">
-              {menuUploads.map((upload) => (
-                <li key={upload.id}>
-                  {upload.previewUrl ? (
-                    <img src={upload.previewUrl} alt={`${upload.name} preview`} />
-                  ) : (
-                    <span className="pdf-badge">PDF</span>
-                  )}
-                  <span>
-                    {upload.name}
-                    <small>{Math.ceil(upload.size / 1024)} KB</small>
-                  </span>
-                  <button type="button" onClick={() => removeMenuUpload(upload.id)}>
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
           <label>
-            Menu text or OCR result
+            Menu text
             <textarea value={draft.menuText} onChange={(event) => updateDraft("menuText", event.target.value)} rows={5} />
           </label>
           <label>

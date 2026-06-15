@@ -5,14 +5,6 @@ export type MenuItem = {
   category: string;
 };
 
-export type MenuUpload = {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  previewUrl?: string;
-};
-
 export type Restaurant = {
   id: string;
   name: string;
@@ -22,7 +14,6 @@ export type Restaurant = {
   latitude: number;
   longitude: number;
   menuItems: MenuItem[];
-  menuUploads: MenuUpload[];
   notes: string;
 };
 
@@ -39,7 +30,6 @@ export const sampleRestaurants: Restaurant[] = [
       { id: "paneer-wrap", name: "Paneer Wrap", price: 650, category: "Mains" },
       { id: "chicken-thali", name: "Chicken Thali", price: 1100, category: "Combos" }
     ],
-    menuUploads: [],
     notes: "Good lunch combos under ₹1,200."
   },
   {
@@ -54,7 +44,6 @@ export const sampleRestaurants: Restaurant[] = [
       { id: "salmon-roll", name: "Salmon Roll", price: 1200, category: "Rolls" },
       { id: "bento-box", name: "Bento Box", price: 2200, category: "Combos" }
     ],
-    menuUploads: [],
     notes: "Affordable if ordering rolls instead of platters."
   },
   {
@@ -69,7 +58,6 @@ export const sampleRestaurants: Restaurant[] = [
       { id: "margherita", name: "Margherita Pizza", price: 1000, category: "Pizza" },
       { id: "pasta", name: "Pesto Pasta", price: 1450, category: "Pasta" }
     ],
-    menuUploads: [],
     notes: "Shareable pizzas make this a solid value for groups."
   }
 ];
